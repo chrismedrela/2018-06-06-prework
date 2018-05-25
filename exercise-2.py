@@ -56,13 +56,13 @@ class Customer:
 class AbstractDiscount(metaclass = abc.ABCMeta):
 
     @abc.abstractmethod
-    def __call__(self, customer):
+    def __new__(cls, customer: Customer):
 
         return 0
 
 class SeniorDiscount(AbstractDiscount):
 
-    def __call__(self, customer: Customer):
+    def __new__(cls, customer: Customer):
 
         now = datetime.datetime.now()
         year = datetime.timedelta(days = 365)
@@ -74,7 +74,7 @@ class SeniorDiscount(AbstractDiscount):
 
 class OneYearLoyalCustomerDiscount(AbstractDiscount):
 
-    def __call__(self, customer: Customer):
+    def __new__(cls, customer: Customer):
 
         now = datetime.datetime.now()
         year = datetime.timedelta(days = 365)
@@ -89,7 +89,7 @@ class OneYearLoyalCustomerDiscount(AbstractDiscount):
 
 class FiveYearLoyalCustomerDiscount(AbstractDiscount):
 
-    def __call__(self, customer: Customer):
+    def __new__(cls, customer: Customer):
 
         now = datetime.datetime.now()
         year = datetime.timedelta(days = 365)
@@ -104,7 +104,7 @@ class FiveYearLoyalCustomerDiscount(AbstractDiscount):
 
 class TenYearLoyalCustomerDiscount(AbstractDiscount):
 
-    def __call__(self, customer: Customer):
+    def __new__(cls, customer: Customer):
 
         now = datetime.datetime.now()
         year = datetime.timedelta(days = 365)
@@ -119,7 +119,7 @@ class TenYearLoyalCustomerDiscount(AbstractDiscount):
 
 class FirstTimePurchaseDiscount(AbstractDiscount):
 
-    def __call__(self, customer: Customer):
+    def __new__(cls, customer: Customer):
 
         if customer.first_purchase_date is None:
             return 15
@@ -128,7 +128,7 @@ class FirstTimePurchaseDiscount(AbstractDiscount):
 
 class VeteranDiscount(AbstractDiscount):
 
-    def __call__(self, customer: Customer):
+    def __new__(cls, customer: Customer):
 
         if customer.is_veteran:
             return 10
@@ -137,11 +137,11 @@ class VeteranDiscount(AbstractDiscount):
 
 class DiscountCalculator:
 
-    def __init__(self, functors: typing.List[AbstractDiscount] = None):
+    def __init__(self, functors: typing.List[type(AbstractDiscount)] = None):
 
         self._functors = functors if functors is not None else []
 
-        assert all(isinstance(f, AbstractDiscount) for f in self._functors)
+        assert all(issubclass(f, AbstractDiscount) for f in self._functors)
 
     def calculate(self, customer):
 
@@ -162,12 +162,12 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
         self.year = datetime.timedelta(days = 365)
 
         self.functors = [
-            SeniorDiscount(),
-            OneYearLoyalCustomerDiscount(),
-            FiveYearLoyalCustomerDiscount(),
-            TenYearLoyalCustomerDiscount(),
-            FirstTimePurchaseDiscount(),
-            VeteranDiscount(),
+            SeniorDiscount,
+            OneYearLoyalCustomerDiscount,
+            FiveYearLoyalCustomerDiscount,
+            TenYearLoyalCustomerDiscount,
+            FirstTimePurchaseDiscount,
+            VeteranDiscount,
         ]
 
     def test_should_return_zero_for_casual_customer(self):
