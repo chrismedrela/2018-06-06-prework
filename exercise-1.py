@@ -14,19 +14,55 @@ się w osobnej klasie reprezentującej adres email.
 import re
 import unittest
 
+class Email:
 
-EMAIL_PATTERN = re.compile(r'^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$')
+    __slots__ = ['_value']
 
+    def __init__(self, value: str):
+
+        self.value = value
+
+    @property
+    def value(self) -> str:
+
+        return self._value
+
+    @value.setter
+    def value(self, value: str) -> None:
+
+        assert isinstance(value, str)
+
+        if re.match(self.pattern, value) is None:
+            raise ValueError('Invalid email')
+
+        self._value = value
+
+    @property
+    def pattern(self) -> str:
+
+        return r'^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$'
 
 class Person:
-    def __init__(self, first_name, last_name, email):
+
+    __slots__ = ['first_name', 'last_name', '_email']
+
+    def __init__(self, first_name: str, last_name: str, email: str):
+
         assert isinstance(first_name, str)
         assert isinstance(last_name, str)
         assert isinstance(email, str)
-        
-        self.first_name = first_name 
+
+        self.first_name = first_name
         self.last_name = last_name
-        if EMAIL_PATTERN.match(email) is None:
-            raise ValueError('Invalid email')
-        else:
-            self.email = email
+
+        self._email = Email(email)
+
+    @property
+    def email(self) -> str:
+
+        return self._email.value
+
+    @email.setter
+    def email(self, value: str) -> None:
+
+        self._email.value = value
