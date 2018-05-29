@@ -12,13 +12,23 @@ się w osobnej klasie reprezentującej adres email.
 """
 
 import re
+import inspect
 import unittest
 
 
 EMAIL_PATTERN = re.compile(r'^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$')
 
+class EmailValidator(type):
 
-class Person:
+    def __new__(cls, email):
+
+        if EMAIL_PATTERN.match(email) is None:
+            raise ValueError('Invalid email')
+
+        return email
+
+
+class Person(object):
     def __init__(self, first_name, last_name, email):
         assert isinstance(first_name, str)
         assert isinstance(last_name, str)
@@ -26,7 +36,5 @@ class Person:
         
         self.first_name = first_name 
         self.last_name = last_name
-        if EMAIL_PATTERN.match(email) is None:
-            raise ValueError('Invalid email')
-        else:
-            self.email = email
+        self.email = EmailValidator(email)
+
