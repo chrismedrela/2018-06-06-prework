@@ -66,6 +66,8 @@ def calculate_discount_percentage(customer):
     return max(discount)
 
 class Customer:
+    # VERY-TODO: calculate_discount_percentage should be a default discount algorithm
+    # set in init
     def __init__(self, first_purchase_date, birth_date, is_veteran):
         assert isinstance(first_purchase_date, (type(None), datetime.datetime))
         assert isinstance(birth_date, datetime.datetime)
