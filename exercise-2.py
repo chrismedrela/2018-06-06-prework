@@ -65,9 +65,16 @@ def calculate_discount_percentage(customer):
 
     return max(discount)
 
+
+class DiscountCalculation:
+    def __init__(self, discount_algorithm):
+        self.discount_algorithm_hook = discount_algorithm
+
+    def calculate_discount_percentage(self, customer):
+        return self.discount_algorithm_hook(customer)
+
+
 class Customer:
-    # VERY-TODO: calculate_discount_percentage should be a default discount algorithm
-    # set in init
     def __init__(self, first_purchase_date, birth_date, is_veteran):
         assert isinstance(first_purchase_date, (type(None), datetime.datetime))
         assert isinstance(birth_date, datetime.datetime)
@@ -83,11 +90,13 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
         self.now = datetime.datetime.now()
         self.year = datetime.timedelta(days=365)
 
+        self.ds = DiscountCalculation(calculate_discount_percentage)
+
     def test_should_return_zero_for_casual_customer(self):
         customer = Customer(first_purchase_date=self.now,
                             birth_date=self.now - 20 * self.year,
                             is_veteran=False)
-        got = calculate_discount_percentage(customer)
+        got = self.ds.calculate_discount_percentage(customer)
         expected = 0
         self.assertEqual(got, expected)
 
@@ -95,7 +104,7 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
         customer = Customer(first_purchase_date=None,
                             birth_date=self.now - 20 * self.year,
                             is_veteran=False)
-        got = calculate_discount_percentage(customer)
+        got = self.ds.calculate_discount_percentage(customer)
         expected = 15
         self.assertEqual(got, expected)
 
@@ -103,7 +112,7 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
         customer = Customer(first_purchase_date=self.now,
                             birth_date=self.now - 20 * self.year,
                             is_veteran=True)
-        got = calculate_discount_percentage(customer)
+        got = self.ds.calculate_discount_percentage(customer)
         expected = 10
         self.assertEqual(got, expected)
 
@@ -111,7 +120,7 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
         customer = Customer(first_purchase_date=self.now,
                             birth_date=self.now - 65 * self.year,
                             is_veteran=False)
-        got = calculate_discount_percentage(customer)
+        got = self.ds.calculate_discount_percentage(customer)
         expected = 5
         self.assertEqual(got, expected)
 
@@ -119,7 +128,7 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
         customer = Customer(first_purchase_date=self.now - 1 * self.year,
                             birth_date=self.now - 20 * self.year,
                             is_veteran=False)
-        got = calculate_discount_percentage(customer)
+        got = self.ds.calculate_discount_percentage(customer)
         expected = 10
         self.assertEqual(got, expected)
 
@@ -127,7 +136,7 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
         customer = Customer(first_purchase_date=self.now - 5 * self.year,
                             birth_date=self.now - 20 * self.year,
                             is_veteran=False)
-        got = calculate_discount_percentage(customer)
+        got = self.ds.calculate_discount_percentage(customer)
         expected = 12
         self.assertEqual(got, expected)
 
@@ -135,7 +144,7 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
         customer = Customer(first_purchase_date=self.now - 10 * self.year,
                             birth_date=self.now - 20 * self.year,
                             is_veteran=False)
-        got = calculate_discount_percentage(customer)
+        got = self.ds.calculate_discount_percentage(customer)
         expected = 20
         self.assertEqual(got, expected)
 
@@ -144,7 +153,7 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
                             birth_date=self.now - 20 * self.year,
                             is_veteran=True)
         # eligible for 15% discount.append() as a new client and 10% as a veteran
-        got = calculate_discount_percentage(customer)
+        got = self.ds.calculate_discount_percentage(customer)
         expected = 15
         self.assertEqual(got, expected)
 
