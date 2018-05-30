@@ -19,13 +19,17 @@ EMAIL_PATTERN = re.compile(r'^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})
 
 
 class Person:
-    def __init__(self, first_name, last_name, email):
+    def __init__(self, first_name, last_name):
         assert isinstance(first_name, str)
         assert isinstance(last_name, str)
-        assert isinstance(email, str)
-        
+                
         self.first_name = first_name 
         self.last_name = last_name
+       
+class Email:
+    def __init__(self,email):
+        assert isinstance(email, str)
+        
         if EMAIL_PATTERN.match(email) is None:
             raise ValueError('Invalid email')
         else:
