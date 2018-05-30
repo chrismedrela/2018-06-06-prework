@@ -51,28 +51,34 @@ class Customer:
         self.is_veteran = is_veteran
 
 
-def calculate_discount_percentage(customer):
+def disc_custom_or_premade(premade, custom=None):
+    if custom:
+        return custom
+    return premade
+
+
+def calculate_discount_percentage(customer, custom_disc=None):
     discount = 0
     now = datetime.datetime.now()
     year = datetime.timedelta(days=365)
     if customer.birth_date <= now - 65*year:
         # senior discount
-        discount = 5
+        discount = disc_custom_or_premade(5, custom_disc)
     if customer.first_purchase_date is not None:
         if customer.first_purchase_date <= now - year:
             # after one year, loyal customers get 10%
-            discount = 10
+            discount = disc_custom_or_premade(10, custom_disc)
             if customer.first_purchase_date <= now - 5*year:
                 # after five years, 12%
-                discount = 12
+                discount = disc_custom_or_premade(12, custom_disc)
                 if customer.first_purchase_date <= now - 10*year:
                     # after ten years, 20%
-                    discount = 20
+                    discount = disc_custom_or_premade(20, custom_disc)
     else:
         # first time purchase ==> 15% discount
-        discount = 15
+        discount = disc_custom_or_premade(15, custom_disc)
     if customer.is_veteran:
-        discount = max(discount, 10)
+        discount = disc_custom_or_premade(max(discount, 10), custom_disc)
     return discount
 
 
