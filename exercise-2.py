@@ -51,28 +51,83 @@ class Customer:
         self.is_veteran = is_veteran
 
 
-def calculate_discount_percentage(customer):
-    discount = 0
+def discount_senior(customer):
     now = datetime.datetime.now()
     year = datetime.timedelta(days=365)
     if customer.birth_date <= now - 65*year:
         # senior discount
-        discount = 5
-    if customer.first_purchase_date is not None:
-        if customer.first_purchase_date <= now - year:
-            # after one year, loyal customers get 10%
-            discount = 10
-            if customer.first_purchase_date <= now - 5*year:
-                # after five years, 12%
-                discount = 12
-                if customer.first_purchase_date <= now - 10*year:
-                    # after ten years, 20%
-                    discount = 20
-    else:
+        return 5
+    return 0
+
+
+def discount_first_purchase(customer):
+    now = datetime.datetime.now()
+    year = datetime.timedelta(days=365)
+
+    discount = 0
+    if customer.first_purchase_date is None:
         # first time purchase ==> 15% discount
         discount = 15
+    elif customer.first_purchase_date <= now - year:
+        # after one year, loyal customers get 10%
+        discount = 10
+        if customer.first_purchase_date <= now - 5*year:
+            # after five years, 12%
+            discount = 12
+            if customer.first_purchase_date <= now - 10*year:
+                # after ten years, 20%
+                discount = 20
+
+    return discount
+
+
+def discount_veteran(customer, discount):
     if customer.is_veteran:
-        discount = max(discount, 10)
+        return max(discount, 10)
+    return discount
+
+
+class Discount:
+    def __init__(self, apply_func, calculate_discount_func):
+        self._apply_func = apply_func
+        self._calc_discount_func = calculate_discount_func
+
+    def apply(self, customer, current_discount):
+        discount = self._apply_func(current_discount,
+                                    customer,
+                                    self._calc_discount_func)
+        return discount
+
+    @staticmethod
+    def apply_if_zero(current_discount, customer, func):
+        if current_discount:
+            return current_discount
+        else:
+            return func(customer, current_discount)
+
+    @staticmethod
+    def apply_always(current_discount, customer, func):
+        return func(customer, current_discount)
+
+
+def calculate_discount_percentage(customer):
+    def ignore_cur_discount(f):
+        def wrapped(a, b):
+            return f(a)
+        return wrapped
+
+    discount_objs = (
+        Discount(Discount.apply_if_zero,
+                 ignore_cur_discount(discount_senior)),
+        Discount(Discount.apply_if_zero,
+                 ignore_cur_discount(discount_first_purchase)),
+        Discount(Discount.apply_always,
+                 discount_veteran)
+    )
+
+    discount = 0
+    for discount_obj in discount_objs:
+        discount = discount_obj.apply(customer, discount)
     return discount
 
 
