@@ -51,29 +51,68 @@ class Customer:
         self.is_veteran = is_veteran
 
 
-def calculate_discount_percentage(customer):
-    discount = 0
-    now = datetime.datetime.now()
+class Discount:
+    def __init__(self, customer):
+        self._customer = customer
+
+    def calculate(self):
+        return max(
+            (getattr(self, discount_type) for discount_type in dir(self) if 'discount' in discount_type)
+        )
+
+
+class Shop1Discount(Discount):
+
     year = datetime.timedelta(days=365)
-    if customer.birth_date <= now - 65*year:
-        # senior discount
-        discount = 5
-    if customer.first_purchase_date is not None:
-        if customer.first_purchase_date <= now - year:
-            # after one year, loyal customers get 10%
-            discount = 10
-            if customer.first_purchase_date <= now - 5*year:
-                # after five years, 12%
-                discount = 12
-                if customer.first_purchase_date <= now - 10*year:
-                    # after ten years, 20%
-                    discount = 20
-    else:
-        # first time purchase ==> 15% discount
-        discount = 15
-    if customer.is_veteran:
-        discount = max(discount, 10)
-    return discount
+
+    @property
+    def now(self):
+        return datetime.datetime.now()
+
+    @property
+    def discount_new_customer(self):
+        return 15 if self._customer.first_purchase_date is None else 0
+
+    @property
+    def discount_senior(self):
+        if self._customer.birth_date <= self.now - 65 * Shop1Discount.year:
+            return 5
+        return 0
+
+    def _check_customer_loyalty(self, years):
+        return (self._customer.first_purchase_date or self.now) <= self.now - years * Shop1Discount.year
+
+    @property
+    def discount_after_1_year(self):
+        return 10 if self._check_customer_loyalty(1) else 0
+
+    @property
+    def discount_after_5_year(self):
+        return 12 if self._check_customer_loyalty(5) else 0
+
+    @property
+    def discount_after_10_year(self):
+        return 20 if self._check_customer_loyalty(10) else 0
+
+    @property
+    def discount_veteran(self):
+        return 10 if self._customer.is_veteran else 0
+
+
+class Shop2Discount(Shop1Discount):
+    @property
+    def discount_new_customer(self):
+        return 0
+
+
+def calculate_discount_percentage(customer):
+    shop_1_discount = Shop1Discount(customer)
+    return shop_1_discount.calculate()
+
+
+def calculate_new_discount_percentage(customer):
+    shop_2_discount = Shop2Discount(customer)
+    return shop_2_discount.calculate()
 
 
 class CalculateDiscountPercentageTests(unittest.TestCase):
@@ -145,6 +184,17 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
         got = calculate_discount_percentage(customer)
         expected = 15
         self.assertEqual(got, expected)
+
+
+class CalculateDiscountPercentageTestsNew(CalculateDiscountPercentageTests):
+    def test_should_return_15_for_new_client(self):
+        customer = Customer(first_purchase_date=None,
+                            birth_date=self.now-20*self.year,
+                            is_veteran=False)
+        got = calculate_new_discount_percentage(customer)
+        expected = 0
+        self.assertEqual(got, expected)
+
 
 if __name__ == "__main__":
     unittest.main()
