@@ -50,31 +50,56 @@ class Customer:
         self.birth_date = birth_date
         self.is_veteran = is_veteran
 
-
-def calculate_discount_percentage(customer):
-    discount = 0
-    now = datetime.datetime.now()
-    year = datetime.timedelta(days=365)
-    if customer.birth_date <= now - 65*year:
-        # senior discount
-        discount = 5
-    if customer.first_purchase_date is not None:
+class DiscountStrategy:
+    def __init__(self):
+        self.discounts = [self.calculate_discount_for_veteran,
+                         self.calculate_discount_for_senior,
+                         self.calculate_discount_for_regular_customer,
+                         self.calculate_discount_for_new_customer]
+    
+    def calculate_discount_percentage(self, customer):
+        return max([discount(customer) for discount in self.discounts])
+    
+    def calculate_discount_for_veteran(self, customer):
+        if customer.is_veteran:
+            return 10
+        return 0
+    
+    def calculate_discount_for_senior(self, customer):
+        now = datetime.datetime.now()
+        year = datetime.timedelta(days=365)
+        if customer.birth_date <= now - 65*year:
+            return 5
+        return 0
+    
+    def calculate_discount_for_regular_customer(self, customer):
+        if customer.first_purchase_date is None:
+            return 0
+        
+        now = datetime.datetime.now()
+        year = datetime.timedelta(days=365)
+        if customer.first_purchase_date <= now - 10*year:
+            return 20
+        if customer.first_purchase_date <= now - 5*year:
+            return 12
         if customer.first_purchase_date <= now - year:
-            # after one year, loyal customers get 10%
-            discount = 10
-            if customer.first_purchase_date <= now - 5*year:
-                # after five years, 12%
-                discount = 12
-                if customer.first_purchase_date <= now - 10*year:
-                    # after ten years, 20%
-                    discount = 20
-    else:
-        # first time purchase ==> 15% discount
-        discount = 15
-    if customer.is_veteran:
-        discount = max(discount, 10)
-    return discount
+            return 10
 
+        return 0
+    
+    def calculate_discount_for_new_customer(self, customer):
+        if customer.first_purchase_date is not None:
+            return 0
+        return 15
+        
+class NoDiscountStrategy(DiscountStrategy):
+    def __init__(self):
+        self.discounts = [self.no_discount]
+    def no_discount(self, customer):
+        return 0
+    
+def calculate_discount_percentage(customer):
+    return DiscountStrategy().calculate_discount_percentage(customer)
 
 class CalculateDiscountPercentageTests(unittest.TestCase):
     def setUp(self):
@@ -145,6 +170,13 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
         got = calculate_discount_percentage(customer)
         expected = 15
         self.assertEqual(got, expected)
-
-if __name__ == "__main__":
-    unittest.main()
+        
+    def test_should_return_no_discount(self):
+        customer = Customer(first_purchase_date=None,
+                            birth_date=self.now-20*self.year,
+                            is_veteran=True)
+        # eligible for 15% discount as a new client and 10% as a veteran
+        # but in this case we are cheap and no discount will be given. ever.
+        got = NoDiscountStrategy().calculate_discount_percentage(customer)
+        expected = 0
+        self.assertEqual(got, expected)
