@@ -40,8 +40,9 @@ import datetime
 import unittest
 
 
+
 class Customer:
-    def __init__(self, first_purchase_date, birth_date, is_veteran):
+    def __init__(self, first_purchase_date, birth_date, is_veteran, **kwargs):
         assert isinstance(first_purchase_date, (type(None), datetime.datetime))
         assert isinstance(birth_date, datetime.datetime)
         assert isinstance(is_veteran, bool)
@@ -49,28 +50,48 @@ class Customer:
         self.first_purchase_date = first_purchase_date
         self.birth_date = birth_date
         self.is_veteran = is_veteran
+        if kwargs:
+            self.kwargs = kwargs
 
 
 def calculate_discount_percentage(customer):
+    """
+
+    :type customer: object
+    """
     discount = 0
     now = datetime.datetime.now()
     year = datetime.timedelta(days=365)
-    if customer.birth_date <= now - 65*year:
-        # senior discount
-        discount = 5
+    if customer.birth_date <= now - 65 * year:
+        try:
+            discount = customer.kwargs['discount_for_seniors'] if customer.kwargs['is_discount_for_seniors'] is True \
+                else 0
+        except Exception:
+            discount = 0
     if customer.first_purchase_date is not None:
         if customer.first_purchase_date <= now - year:
-            # after one year, loyal customers get 10%
-            discount = 10
-            if customer.first_purchase_date <= now - 5*year:
-                # after five years, 12%
-                discount = 12
-                if customer.first_purchase_date <= now - 10*year:
-                    # after ten years, 20%
-                    discount = 20
+            try:
+                discount = customer.kwargs['discount_for_loyal_1'] if customer.kwargs['is_discount_for_loyal'] \
+                                                                      is True else 0
+            except Exception:
+                discount = 0
+            if customer.first_purchase_date <= now - 5 * year:
+                try:
+                    discount = customer.kwargs['discount_for_loyal_5'] if customer.kwargs['is_discount_for_loyal'] \
+                                                                          is True else 0
+                except Exception:
+                    discount = 0
+                if customer.first_purchase_date <= now - 10 * year:
+                    try:
+                        discount = customer.kwargs['discount_for_loyal_10'] if customer.kwargs['is_discount_for_loyal'] \
+                                                                               is True else 0
+                    except Exception:
+                        discount = 0
     else:
-        # first time purchase ==> 15% discount
-        discount = 15
+        try:
+            discount = customer.kwargs['discount_for_new'] if customer.kwargs['is_discount_for_new'] is True else 0
+        except Exception:
+            discount = 0
     if customer.is_veteran:
         discount = max(discount, 10)
     return discount
@@ -83,7 +104,7 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
 
     def test_should_return_zero_for_casual_customer(self):
         customer = Customer(first_purchase_date=self.now,
-                            birth_date=self.now-20*self.year,
+                            birth_date=self.now - 20 * self.year,
                             is_veteran=False)
         got = calculate_discount_percentage(customer)
         expected = 0
@@ -91,15 +112,15 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
 
     def test_should_return_15_for_new_client(self):
         customer = Customer(first_purchase_date=None,
-                            birth_date=self.now-20*self.year,
-                            is_veteran=False)
+                            birth_date=self.now - 20 * self.year,
+                            is_veteran=False, is_discount_for_new=True, discount_for_new=9)
         got = calculate_discount_percentage(customer)
-        expected = 15
+        expected = 9
         self.assertEqual(got, expected)
 
     def test_should_return_10_for_veteran(self):
         customer = Customer(first_purchase_date=self.now,
-                            birth_date=self.now-20*self.year,
+                            birth_date=self.now - 20 * self.year,
                             is_veteran=True)
         got = calculate_discount_percentage(customer)
         expected = 10
@@ -107,40 +128,40 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
 
     def test_should_return_5_for_a_senior(self):
         customer = Customer(first_purchase_date=self.now,
-                            birth_date=self.now-65*self.year,
-                            is_veteran=False)
+                            birth_date=self.now - 65 * self.year,
+                            is_veteran=False, is_discount_for_seniors=True, discount_for_seniors=9)
         got = calculate_discount_percentage(customer)
-        expected = 5
+        expected = 9
         self.assertEqual(got, expected)
 
     def test_should_return_10_for_a_loyal_customer(self):
-        customer = Customer(first_purchase_date=self.now-1*self.year,
-                            birth_date=self.now-20*self.year,
-                            is_veteran=False)
+        customer = Customer(first_purchase_date=self.now - 1 * self.year,
+                            birth_date=self.now - 20 * self.year,
+                            is_veteran=False, is_discount_for_loyal=True, discount_for_loyal_1=22)
         got = calculate_discount_percentage(customer)
-        expected = 10
+        expected = 22
         self.assertEqual(got, expected)
 
     def test_should_return_12_for_a_more_loyal_customer(self):
-        customer = Customer(first_purchase_date=self.now-5*self.year,
-                            birth_date=self.now-20*self.year,
-                            is_veteran=False)
+        customer = Customer(first_purchase_date=self.now - 5 * self.year,
+                            birth_date=self.now - 20 * self.year,
+                            is_veteran=False, is_discount_for_loyal=True, discount_for_loyal_5=32)
         got = calculate_discount_percentage(customer)
-        expected = 12
+        expected = 32
         self.assertEqual(got, expected)
 
     def test_should_return_20_for_a_most_loyal_customer(self):
-        customer = Customer(first_purchase_date=self.now-10*self.year,
-                            birth_date=self.now-20*self.year,
-                            is_veteran=False)
+        customer = Customer(first_purchase_date=self.now - 10 * self.year,
+                            birth_date=self.now - 20 * self.year,
+                            is_veteran=False, is_discount_for_loyal=True, discount_for_loyal_10=40)
         got = calculate_discount_percentage(customer)
-        expected = 20
+        expected = 40
         self.assertEqual(got, expected)
 
     def test_should_return_maximum_discount(self):
         customer = Customer(first_purchase_date=None,
-                            birth_date=self.now-20*self.year,
-                            is_veteran=True)
+                            birth_date=self.now - 20 * self.year,
+                            is_veteran=True, discount_for_new=15, is_discount_for_new=True)
         # eligible for 15% discount as a new client and 10% as a veteran
         got = calculate_discount_percentage(customer)
         expected = 15
