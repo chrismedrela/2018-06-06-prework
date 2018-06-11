@@ -51,29 +51,69 @@ class Customer:
         self.is_veteran = is_veteran
 
 
+class AgeBasedDiscount:
+    def __init__(self, age, value):
+        self.min_age_in_years = age
+        self.value = value
+        self.now = datetime.datetime.now()
+        self.year = datetime.timedelta(days=365)
+
+
+class SeniorDiscount(AgeBasedDiscount):
+    def applicable_discount(self, customer):
+        if customer.birth_date <= self.now - (self.min_age_in_years * self.year):
+            return self.value
+        else:
+            return 0
+
+
+class LoyalDiscount(AgeBasedDiscount):
+    def applicable_discount(self, customer):
+        if customer.first_purchase_date is None:
+            discount = 0
+        elif customer.first_purchase_date <= self.now - (self.min_age_in_years * self.year):
+            discount = self.value
+        else:
+            discount = 0
+        return discount
+
+
+class AttributeBasedDiscount:
+    def __init__(self, value):
+        self.value = value
+
+
+class NewCustomerDiscount(AttributeBasedDiscount):
+    def applicable_discount(self, customer):
+        if customer.first_purchase_date is None:
+            return self.value
+        else:
+            return 0
+
+
+class VeteranDiscount(AttributeBasedDiscount):
+    def applicable_discount(self, customer):
+        if customer.is_veteran:
+            return self.value
+        else:
+            return 0
+
+
 def calculate_discount_percentage(customer):
-    discount = 0
-    now = datetime.datetime.now()
-    year = datetime.timedelta(days=365)
-    if customer.birth_date <= now - 65*year:
-        # senior discount
-        discount = 5
-    if customer.first_purchase_date is not None:
-        if customer.first_purchase_date <= now - year:
-            # after one year, loyal customers get 10%
-            discount = 10
-            if customer.first_purchase_date <= now - 5*year:
-                # after five years, 12%
-                discount = 12
-                if customer.first_purchase_date <= now - 10*year:
-                    # after ten years, 20%
-                    discount = 20
-    else:
-        # first time purchase ==> 15% discount
-        discount = 15
-    if customer.is_veteran:
-        discount = max(discount, 10)
-    return discount
+    discounts = current_discounts()
+    discounts = (discount.applicable_discount(customer) for discount in discounts)
+    return max(discounts)
+
+
+def current_discounts():
+    discounts = [
+        NewCustomerDiscount(value=15),
+        VeteranDiscount(value=10),
+        SeniorDiscount(age=65, value=5),
+        LoyalDiscount(age=1, value=10),
+        LoyalDiscount(age=5, value=12),
+        LoyalDiscount(age=10, value=20)]
+    return discounts
 
 
 class CalculateDiscountPercentageTests(unittest.TestCase):
