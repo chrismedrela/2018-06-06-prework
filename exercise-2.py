@@ -51,29 +51,48 @@ class Customer:
         self.is_veteran = is_veteran
 
 
-def calculate_discount_percentage(customer):
-    discount = 0
+def senior_discount(customer):
     now = datetime.datetime.now()
     year = datetime.timedelta(days=365)
-    if customer.birth_date <= now - 65*year:
-        # senior discount
-        discount = 5
-    if customer.first_purchase_date is not None:
-        if customer.first_purchase_date <= now - year:
-            # after one year, loyal customers get 10%
-            discount = 10
-            if customer.first_purchase_date <= now - 5*year:
-                # after five years, 12%
-                discount = 12
-                if customer.first_purchase_date <= now - 10*year:
-                    # after ten years, 20%
-                    discount = 20
-    else:
-        # first time purchase ==> 15% discount
-        discount = 15
+
+    if customer.birth_date <= now - (65 * year):
+        return 5
+    return 0
+
+
+def loyalty_discount(customer):
+    now = datetime.datetime.now()
+    year = datetime.timedelta(days=365)
+
+    if customer.first_purchase_date is None:
+        return 0
+
+    if customer.first_purchase_date <= now - (10 * year):
+        return 20
+
+    if customer.first_purchase_date <= now - (5 * year):
+        return 12
+
+    if customer.first_purchase_date <= now - year:
+        return 10
+
+
+def first_purchase_discount(customer):
+    if customer.first_purchase_date is None:
+        return 15
+    return 0
+
+
+def veteran_discount(customer):
     if customer.is_veteran:
-        discount = max(discount, 10)
-    return discount
+        return 10
+    return 0
+
+# in real life situation I would inject possible discounts as a parameter to make it independent,
+# but here I don't want to change function interface because of unit tests
+def calculate_discount_percentage(customer):
+    possible_discounts = [senior_discount, loyalty_discount, first_purchase_discount, veteran_discount]
+    return max([func(customer) for func in possible_discounts])
 
 
 class CalculateDiscountPercentageTests(unittest.TestCase):
@@ -145,6 +164,7 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
         got = calculate_discount_percentage(customer)
         expected = 15
         self.assertEqual(got, expected)
+
 
 if __name__ == "__main__":
     unittest.main()
