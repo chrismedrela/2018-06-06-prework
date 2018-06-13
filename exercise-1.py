@@ -15,18 +15,37 @@ import re
 import unittest
 
 
-EMAIL_PATTERN = re.compile(r'^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$')
+class Email:
+    EMAIL_PATTERN = re.compile(r'^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$')
+
+    def __init__(self, email):
+        self.set_email_address(email)
+
+    def set_email_address(self, email):
+        assert isinstance(email, str)
+
+        if not self._is_email(email):
+            raise ValueError('Invalid email')
+
+        self.address = email
+
+    def _is_email(self, string):
+        return self.EMAIL_PATTERN.match(string) != None
 
 
 class Person:
     def __init__(self, first_name, last_name, email):
         assert isinstance(first_name, str)
         assert isinstance(last_name, str)
-        assert isinstance(email, str)
-        
-        self.first_name = first_name 
+
+        self.first_name = first_name
         self.last_name = last_name
-        if EMAIL_PATTERN.match(email) is None:
-            raise ValueError('Invalid email')
-        else:
-            self.email = email
+        self._email = Email(email)
+
+    @property
+    def email(self):
+        return self._email.address
+
+    @email.setter
+    def email(self, string):
+        self._email.set_email_address(string)
