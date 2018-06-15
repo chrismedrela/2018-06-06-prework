@@ -26,6 +26,19 @@ class Person:
         
         self.first_name = first_name 
         self.last_name = last_name
+        self._email = Email(email)
+            
+    @property
+    def email(self):
+        return self._email.email
+    
+    @email.setter
+    def email(self, value):
+        assert isinstance(value, str)
+        self._email = Email(value)
+            
+class Email:
+    def __init__(self, email):
         if EMAIL_PATTERN.match(email) is None:
             raise ValueError('Invalid email')
         else:
