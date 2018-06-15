@@ -12,21 +12,41 @@ się w osobnej klasie reprezentującej adres email.
 """
 
 import re
-import unittest
-
 
 EMAIL_PATTERN = re.compile(r'^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$')
 
 
-class Person:
+class InvalidEmail(Exception):
+    pass
+
+
+class Email(object):
+    def __init__(self, email_address):
+        self.email_address = email_address
+
+    def __repr__(self):
+        return self.email_address
+
+    def _validate_mail(self):
+        if EMAIL_PATTERN.match(self.email_address) is None:
+            raise InvalidEmail('Invalid email')
+
+    @property
+    def validated(self):
+        self._validate_mail()
+        return self
+
+
+class Person(object):
     def __init__(self, first_name, last_name, email):
         assert isinstance(first_name, str)
         assert isinstance(last_name, str)
-        assert isinstance(email, str)
-        
-        self.first_name = first_name 
+        assert isinstance(email, Email)
+
+        self.first_name = first_name
         self.last_name = last_name
-        if EMAIL_PATTERN.match(email) is None:
-            raise ValueError('Invalid email')
-        else:
-            self.email = email
+        self.email = email.validated
+
+    def __repr__(self):
+        return "Name: {name}\nSurname: {surname}\nMail: {mail}".format(name=self.first_name, surname=self.last_name,
+                                                                       mail=self.email)
