@@ -38,6 +38,17 @@ nowych klientów), bez duplikowania kodu.
 
 import datetime
 import unittest
+from collections import namedtuple
+
+Discounts=namedtuple("Discount",["type","age","discount"])
+
+tabred=[Discounts(*data) for data in
+        [["Veteran", 0, 10],
+        [ "Old",     1, 10],
+        [ "Old",     5, 12],
+        [ "Old",    10, 20],
+        [ "Senior", 65,  5],
+        [ "Other",   0, 15]]]
 
 
 class Customer:
@@ -50,31 +61,21 @@ class Customer:
         self.birth_date = birth_date
         self.is_veteran = is_veteran
 
-
 def calculate_discount_percentage(customer):
-    discount = 0
-    now = datetime.datetime.now()
-    year = datetime.timedelta(days=365)
-    if customer.birth_date <= now - 65*year:
-        # senior discount
-        discount = 5
-    if customer.first_purchase_date is not None:
-        if customer.first_purchase_date <= now - year:
-            # after one year, loyal customers get 10%
-            discount = 10
-            if customer.first_purchase_date <= now - 5*year:
-                # after five years, 12%
-                discount = 12
-                if customer.first_purchase_date <= now - 10*year:
-                    # after ten years, 20%
-                    discount = 20
-    else:
-        # first time purchase ==> 15% discount
-        discount = 15
-    if customer.is_veteran:
-        discount = max(discount, 10)
-    return discount
-
+    def disc(customer,data):
+        now = datetime.datetime.now()
+        year = datetime.timedelta(days=365)
+        result=0
+        if data.type=="Veteran" and customer.is_veteran:
+            result=data.discount
+        elif data.type=="Old" and customer.first_purchase_date and (customer.first_purchase_date <= now - data.age*year):
+            result=data.discount
+        elif data.type=="Senior" and customer.birth_date <= now - data.age*year:
+            result=data.discount
+        elif data.type=="Other" and not customer.first_purchase_date:
+            result=data.discount
+        return result
+    return max(disc(customer,discount) for discount in tabred)
 
 class CalculateDiscountPercentageTests(unittest.TestCase):
     def setUp(self):
@@ -148,3 +149,5 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+~                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
