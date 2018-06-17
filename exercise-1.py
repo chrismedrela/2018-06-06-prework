@@ -23,10 +23,19 @@ class Person:
         assert isinstance(first_name, str)
         assert isinstance(last_name, str)
         assert isinstance(email, str)
-        
-        self.first_name = first_name 
+
+        self.first_name = first_name
         self.last_name = last_name
-        if EMAIL_PATTERN.match(email) is None:
+        self.email = email
+
+
+class Email:
+    def __init__(self, email):
+        self.email = email
+
+    def validate(self):
+        if EMAIL_PATTERN.match(self.email) is None:
             raise ValueError('Invalid email')
         else:
-            self.email = email
+            return self.email
+ 
