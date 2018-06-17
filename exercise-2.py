@@ -36,6 +36,7 @@ zaimplementowanie podobnej strategii (w której, przykładowo, nie ma zniżki dl
 nowych klientów), bez duplikowania kodu.
 """
 
+
 import datetime
 import unittest
 
@@ -51,29 +52,47 @@ class Customer:
         self.is_veteran = is_veteran
 
 
-def calculate_discount_percentage(customer):
-    discount = 0
-    now = datetime.datetime.now()
-    year = datetime.timedelta(days=365)
-    if customer.birth_date <= now - 65*year:
-        # senior discount
-        discount = 5
-    if customer.first_purchase_date is not None:
-        if customer.first_purchase_date <= now - year:
-            # after one year, loyal customers get 10%
-            discount = 10
-            if customer.first_purchase_date <= now - 5*year:
-                # after five years, 12%
-                discount = 12
-                if customer.first_purchase_date <= now - 10*year:
-                    # after ten years, 20%
-                    discount = 20
-    else:
-        # first time purchase ==> 15% discount
-        discount = 15
-    if customer.is_veteran:
-        discount = max(discount, 10)
-    return discount
+class Discount(object):
+	discount = 0
+
+	def __init__(self, customer):
+		super(Discount, self).__init__()
+		self.customer = customer
+		self.year = datetime.timedelta(days=365)
+
+	def calculate_senior(self, now, discount):
+		if self.customer.birth_date <= now - 65 * self.year:
+			self.discount = discount
+		return
+
+	def calculate_loyal(self, now, discount, **kwargs):
+		if not self.customer.first_purchase_date:
+			self.discount = discount
+			return
+
+		if self.customer.first_purchase_date <= now - 10 * self.year:
+			self.discount = kwargs['ten_y']
+		elif self.customer.first_purchase_date <= now - 5 * self.year:
+			self.discount = kwargs['five_y']
+		elif self.customer.first_purchase_date <= now - self.year:
+			self.discount = kwargs['one_y']
+		return
+
+	def calculate_veteran(self, now, discount):
+		if self.customer.is_veteran:
+			self.discount = max(self.discount, discount)
+
+	def calculate(self):
+		now = datetime.datetime.now()
+		self.calculate_senior(now, 5)
+		self.calculate_loyal(now, 15, one_y=10, five_y=12, ten_y=20)
+		self.calculate_veteran(now, 10)
+		return self.discount
+
+
+def calculate_discount_percentage(customer):  
+    discount_obj = Discount(customer)
+    return discount_obj.calculate()
 
 
 class CalculateDiscountPercentageTests(unittest.TestCase):
@@ -148,3 +167,4 @@ class CalculateDiscountPercentageTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
