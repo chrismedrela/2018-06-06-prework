@@ -36,6 +36,8 @@ zaimplementowanie podobnej strategii (w której, przykładowo, nie ma zniżki dl
 nowych klientów), bez duplikowania kodu.
 """
 
+from abc import ABC
+from abc import abstractmethod
 import datetime
 import unittest
 
@@ -51,29 +53,61 @@ class Customer:
         self.is_veteran = is_veteran
 
 
+class BaseDiscounts(ABC):
+
+    def __init__(self, customer):
+        assert isinstance(customer, Customer)
+        self.customer = customer
+        self.discount = 0
+        self.now = datetime.datetime.now()
+        self.year = datetime.timedelta(days=365)
+
+    @abstractmethod
+    def calculate_discount_percentage(self):
+        pass
+
+    def check_senior_discount(self):
+        if self.customer.birth_date <= self.now - 65 * self.year:
+            self.discount = 5
+        return self.discount
+
+    def check_customer_discount(self):
+        if self.customer.first_purchase_date is not None:
+            if self.customer.first_purchase_date <= self.now - self.year:
+                self.discount = 10
+                if self.customer.first_purchase_date <= self.now - 5 * self.year:
+                    self.discount = 12
+                    if self.customer.first_purchase_date <= self.now - 10 * self.year:
+                        self.discount = 20
+
+    def check_new_client_discount(self):
+        if self.customer.first_purchase_date is None:
+            self.discount = 15
+
+    def check_vip_discount(self):
+        if self.customer.is_veteran:
+            self.discount = max(self.discount, 10)
+
+    def get_discount(self):
+        return self.discount
+
+
+class Discount(BaseDiscounts):
+
+    def __init__(self, customer):
+        super().__init__(customer)
+
+    def calculate_discount_percentage(self):
+        self.check_senior_discount()
+        self.check_new_client_discount()
+        self.check_customer_discount()
+        self.check_vip_discount()
+
+
 def calculate_discount_percentage(customer):
-    discount = 0
-    now = datetime.datetime.now()
-    year = datetime.timedelta(days=365)
-    if customer.birth_date <= now - 65*year:
-        # senior discount
-        discount = 5
-    if customer.first_purchase_date is not None:
-        if customer.first_purchase_date <= now - year:
-            # after one year, loyal customers get 10%
-            discount = 10
-            if customer.first_purchase_date <= now - 5*year:
-                # after five years, 12%
-                discount = 12
-                if customer.first_purchase_date <= now - 10*year:
-                    # after ten years, 20%
-                    discount = 20
-    else:
-        # first time purchase ==> 15% discount
-        discount = 15
-    if customer.is_veteran:
-        discount = max(discount, 10)
-    return discount
+    disc = Discount(customer)
+    disc.calculate_discount_percentage()
+    return disc.get_discount()
 
 
 class CalculateDiscountPercentageTests(unittest.TestCase):
