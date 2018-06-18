@@ -51,29 +51,38 @@ class Customer:
         self.is_veteran = is_veteran
 
 
+def n_years_ago(n_years):
+    return datetime.datetime.now() - n_years * datetime.timedelta(days=365)
+
+
+def loyality_discount_factory(min_loyality_years, discount):
+    def loyality_discount(customer):
+        return discount if customer.first_purchase_date and customer.first_purchase_date <= n_years_ago(min_loyality_years) else 0
+    return loyality_discount
+
+
+def senior_discount(customer):
+    return 5 if customer.birth_date <= n_years_ago(65) else 0
+
+
+def first_time_purchase_discount(customer):
+    return 15 if not customer.first_purchase_date else 0
+
+
+def veteran_discount(customer):
+    return 10 if customer.is_veteran else 0
+
+
 def calculate_discount_percentage(customer):
-    discount = 0
-    now = datetime.datetime.now()
-    year = datetime.timedelta(days=365)
-    if customer.birth_date <= now - 65*year:
-        # senior discount
-        discount = 5
-    if customer.first_purchase_date is not None:
-        if customer.first_purchase_date <= now - year:
-            # after one year, loyal customers get 10%
-            discount = 10
-            if customer.first_purchase_date <= now - 5*year:
-                # after five years, 12%
-                discount = 12
-                if customer.first_purchase_date <= now - 10*year:
-                    # after ten years, 20%
-                    discount = 20
-    else:
-        # first time purchase ==> 15% discount
-        discount = 15
-    if customer.is_veteran:
-        discount = max(discount, 10)
-    return discount
+    discounts = [
+        senior_discount,
+        loyality_discount_factory(min_loyality_years=1, discount=10),
+        loyality_discount_factory(min_loyality_years=5, discount=12),
+        loyality_discount_factory(min_loyality_years=10, discount=20),
+        first_time_purchase_discount,
+        veteran_discount
+    ]
+    return max(discount(customer) for discount in discounts)
 
 
 class CalculateDiscountPercentageTests(unittest.TestCase):
